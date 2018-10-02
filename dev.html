@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="./CSS/Main.css"/>
+		<link rel="stylesheet" type="text/css" href="./CSS/Scrollbar.css"/>
+		<link rel="stylesheet" type="text/css" href="./dev.css"/>
+		<title>TSA Auction Services - Home</title>
+	</head>
+	<body onload="initPage();">
+		<input type="hidden" id="firstURL" value="">
+		<div id="navBar">
+			<div id='navLink' onclick="pageLoader('http://192.168.1.249/Rebuild/Apps/Render/userAccountSelector.php');"> 273549</div>
+			<div id='navLink' style='color:green'>New Transaction</div>
+			<div id='navLink' style='color:green'>Cash Out</div>
+			<div id='navLink' style='color:maroon;'>Auction Items</div>
+			<div id='navLink' style='color:maroon;'>System Control</div>
+			<div id='navLink' style='color:maroon;'>Statistics</div>
+			<div id='navLink' style='color:maroon;'>Transfer Account</div>
+		</div>
+		<div id="contentBox">
+<!--Copy From here---------------------------------------------------------------------->
+			<div style="width:1085px; height:620px;overflow-y:hidden;"> <!-- Wrapper -->
+				
+			</div>
+<!--to here ------------------------------------->
+		</div>
+
+		<div id="contentProc">
+			<img id="loadImage" src="./Static/IMG/loading.gif"/>
+			<font style="position:relative;left:120px;top:55px;">Processing Your Request....</font>
+		</div>
+
+		<div id="errorDisp">
+			<p id="errorMSG"></p>
+		</div>
+	</body>
+	<script type="text/javascript" src="./Static/Greensock_src/minified/TweenLite.min.js"></script>
+	<script type="text/javascript" src="./Static/Greensock_src/minified/plugins/CSSPlugin.min.js"></script>
+	<script type="text/javascript" src="./dev.js"></script>
+	<!--<script type="text/javascript" src="./Static/JS/Main.js"></script>
+	<script type="text/javascript" src="./Static/JS/PageLoader.js"></script>-->
+</html>
