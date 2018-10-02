@@ -13,7 +13,7 @@ if(ISSET($_GET["UP"])){//If form requires updating
           array_push($res, $ret);//If error occurs: add to array for later output
         }
         unset($content);
-      
+
         if(count($res) > 0){
         array_unshift($res, "The Following Errors Have Occured...");
         $js = "<script type='text/javascript'>
@@ -21,7 +21,7 @@ if(ISSET($_GET["UP"])){//If form requires updating
           foreach($res as $err)
           	$js .= "<br/>" . $err . "';
                 </script>";
-      } 
+      }
 	}
 }else if(ISSET($_POST["AJX"])){//Generate editor window of baskets (low) - (high) inclusive
   $Basket = new Basket();
@@ -38,14 +38,15 @@ if(ISSET($_GET["UP"])){//If form requires updating
 <html>
   <head>
     <style type="text/css"></style>
-    <script type='text/javascript' src='./dynamicNetworking.js'></script>
   </head>
   <body onload="getBaskets(document.getElementById('#min').value,document.getElementById('#max').value);">
     <input type="number" id="#min" value="1"/> - <input type="number" id= "#max" value="10"/>
     	<input type="button" value="Populate" onclick="getBaskets(document.getElementById('#min').value,document.getElementById('#max').value);"/>
     <hr />
-    <div id="#AJAX"> 
+    <div id="#AJAX">
 		Populating form...
    	</div>
+    <script type="text/javascript" src="./../../Static/JS/config.js"></script>
+    <script type='text/javascript' src='./dynamicNetworking.js'></script>
   </body>
 </html>

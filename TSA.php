@@ -17,7 +17,6 @@ require(CONFIG::DOC_ROOT . "/Mysqli.php");
 //
 $Operator = new Operator_Interface();
 $Accounts = $Operator->getAccountsInterface();
-
 //
 //  Load navigation and respond w/ JSON CFG. Used for initial login check aswell
 //
@@ -35,6 +34,8 @@ switch($action){
     vis_loadAccountSummary();
   break;case 2004:
     vis_loadAccountSummary();
+  break;case 2004.1:
+    act_getAccountStatus();
   break;case 2005:
     vis_loadStorefront();
   break;case 2101://Add/remove line item
@@ -122,6 +123,11 @@ function vis_loadAccountSummary(){
   $retData = $Accounts->loadAccountSummary();
   header("tsastatus:2004");
   exit(json_encode($retData));
+}
+
+function act_getAccountStatus(){
+  header("tsastatus:2004.1");
+  return Accounts::accountExists($_POST["uuid"]);
 }
 
 //form data POSTed

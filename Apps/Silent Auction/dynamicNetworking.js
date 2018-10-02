@@ -42,3 +42,15 @@ function deleteBasket(id){
   xHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
   xHttpReq.send("DEL=true");
 }
+
+function uuidIsValid(uuid){
+  var xHttpReq = new XMLHttpRequest();
+  xHttpReq.open("POST", endpoint, true);
+  xHttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+  xHttpReq.send("uuid=" + uuid);
+  if(xHttpReq.readyState == 4 && xHttpReq.status == 200){
+    if(xHttpReq.responseText == -1)
+      return false;//Account DNE
+    return true;//Account exists
+  }
+}

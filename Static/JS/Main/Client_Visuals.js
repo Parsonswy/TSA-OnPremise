@@ -7,7 +7,7 @@ errorMessage = document.getElementById("errorMSG");
 errorImg = document.getElementById("errorIMG");
 function displayError(type, message, time){
   img = "warning.png";
-  if(type == 0)
+  if(type === 0)
     img = "info.png";
 
   errorImg.src="./Static/IMG/" + img;
