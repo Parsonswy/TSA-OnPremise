@@ -1,0 +1,89 @@
+div.verticalFlexCol{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color:white;
+}
+
+section.fullblock{
+  width:750px;
+  height:auto;
+  margin:10px;
+  overflow-x: auto;
+  background-color: #505050;
+
+  padding:5px;
+}
+
+div.subblock{
+
+}
+
+h2{
+  color:#ffb366;
+  margin:4px;
+}
+
+h3{
+  color:#438CFF;
+  margin:4px;
+}
+
+table{
+  width:100%;
+  text-align:center;
+}
+
+td{
+  width:100px;
+  border:#808080 1px solid;
+  padding:5px;
+  font-size: 18px;
+}
+
+td.node:nth-child(odd){ background-color:#808080;}
+
+input[type="checkbox"]{
+  width:20px;
+  height:20px;
+
+  border:none;
+  border-radius: 0px;
+
+  background-color: #EEE;
+}
+
+/*********************************************
+    Operator Classes
+    **********************************************/
+div.operator{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  justify-content:space-around;
+  border:solid 1px #808080;
+}
+
+div.operator span{
+  font-size:18px;
+  margin:5px;
+}
+
+div.operator input[type="text"], input[type="password"]{
+  width:250px;
+  height:20px;
+  border:none;
+  border-radius: 2px;
+  padding:1px;
+  background-color: #F0F0F0;
+  font-size:16px;
+}
+div.operator select{
+  width:200px;
+  height:24px;
+  border:none;
+  border-radius:4px;
+  background-color: #F0F0F0;
+}

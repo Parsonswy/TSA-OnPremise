@@ -1,0 +1,193 @@
+/*
+  Operator Login Page
+*/
+#login_wrapper{
+  width:280px;
+  height:180px;
+  margin:auto;
+  margin-top:40px;
+  background-color: #808080;
+  text-align: center;
+  color:white;
+  font-size:20px;
+}
+#login_message{
+  background-color:#282828;
+  padding:4px;
+  font-size:14px;
+  color:#428CFF;
+}
+#login_username{
+  width:250px;
+  height:30px;
+  border:none;
+  border-radius: 4px;
+  font-size:18px;
+}
+#login_password{
+  width:250px;
+  height:30px;
+  border:none;
+  border-radius: 4px;
+  font-size:18px;
+}
+#login_submit{
+  width:200px;
+  height:32px;
+  margin-top:8px;
+  border:none;
+  border-radius:4px;
+  background-color:#ffb366;
+  font-size:16px;
+  font-weight: 600;
+  cursor:pointer;
+}
+
+/*
+  Store Styling
+*/
+div.store{
+  overflow:hidden;
+}
+
+#store_shelf{
+  display:flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  overflow-y:auto;
+}
+
+div.store_item{
+  display: inline-block;
+  height: 150px;
+  width: 700px;
+
+  margin: 5px;
+  vertical-align: top;
+  border:1px solid #EEE;
+
+  text-align: center;
+}
+
+div.store_item_left{
+  display: inline-block;
+  width:300px;
+  min-height:150px;
+  float:left;
+  margin:0px;
+}
+
+div.store_item_right{
+  display: inline-block;
+  width: 400px;
+  min-height:150px;
+  margin:auto;
+}
+
+img.store_item_img{
+  display:block;
+  position: relative;
+  width:100px;
+  height:100px;
+  margin:auto;
+  top:15%;
+}
+
+div.store_item_selCounter{
+  display:inline-block;
+  width:inherit;
+  height:80px;
+  text-align: center;
+  font-size:38px;
+}
+
+div.store_item_selCounter span,input{
+  display: inline-block;
+  width:30%;
+  height:inherit;
+  margin:0px;
+  vertical-align: top;
+  border: none;
+  padding: 0px;
+  font-size:30px;
+}
+
+div.store_item_selCounter span[clicker="true"]{
+  cursor:pointer;
+  background-color:#505050;
+}
+
+div.store_item_selRadio{
+  text-align: left;
+  font-size: 18px;
+  color:white;
+}
+
+div.store_item_selRadio input{
+  width:16px;
+  height:16px;
+}
+
+div.store_item_selRadio div{
+  margin-top:2px;
+}
+
+div.store_item_selDrop select{
+  width: 200px;
+  height:40px;
+  margin-top:10px;
+  font-size: 18px;
+}
+
+div.store_item_selCustom input{
+  width:200px;
+  height:30px;
+  margin-top:10px;
+}
+
+div.receipt{
+  width:560px;
+  height:380px;
+  margin:auto;
+
+  color:white;
+}
+
+div.receipt table{
+  border-collapse:  collapse;
+}
+
+div.receipt table tr td:nth-child(odd){
+  width:450px;
+
+  border-bottom: 1px solid #EEE;
+  border-right:1px solid #DDD;
+  padding:2px;
+}
+
+div.receipt table tr td:nth-child(even){
+  width: 120px;
+  border-bottom: 1px solid #EEE;
+  padding:2px;
+  text-align: right;
+}
+
+div.receipt table tr:last-of-type td{
+  border-bottom: none;
+}
+
+div.receipt p{
+  font-style: italic;
+}
+
+div.receipt_button{
+  width:140px;
+  height:28px;
+  border-radius: 5px;
+  background-color:#ffb366;
+  cursor:pointer;
+  text-align: center;
+  font-size: 20px;
+  color:#EEE;
+}
