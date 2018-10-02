@@ -1,5 +1,5 @@
 # TSA-OnPremise History
-Legacy System - None of these iterations are used in production now, but serve as a portfolio and path of learning experiences.
+Legacy System - None of these iterations are used in production now, but serve as a portfolio and path of learning experiences. Active development is hidden away in a private repository.
 
 # What
 The "Team Savannah Auction Program," is an event management platform developed for the annual Team Savannah Arthritus Foundation Auction. Notable system features include individual patron credit accounts, storefronts for resale items, silent auction tracking, line-item transaction history, pin/photo-id security, PDF receipt generation, and instant financial statistics. None of these archived iterations atually interfaced with a payment processors, but they would track patron spending throuhgout an event night to depriciate tedious, manual labor and imrpoove efficiency. At the end of an event, a total for external billing with an itemized receipt were generated for cashout. We typically used PayPal with an exteranal card reader for the monitary processing.
