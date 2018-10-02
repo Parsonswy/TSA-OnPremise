@@ -1,341 +1,228 @@
 <?php
-require(CONFIG::DOC_ROOT . "/Apps/Commerce/TransactionLineItem.php");
+//Todo, smart error display to user @ all "ERR"
+	if(!class_exists("CONFIG"))
+		require("/var/www/html/Rebuild/Apps/Config/Config.php");
+	
+	if(CONFIG::SYS_LOCKOUT)//TODO:: inteligent redirects back (restore to exact point in transaction)
+		header("Location:" . CONFIG::DOC_ROOT_WEB . "/Apps/Config/Lockout.php?prevURL=" . CONFIG::DOC_ROOT_WEB . "/TSA_AUCTION.php");
+	
+	if(!class_exists("Authentication"))
+		require (CONFIG::DOC_ROOT . "/Apps/Authentication/Authentication.php");
+	
+	if(!class_exists("User"))
+		require (CONFIG::DOC_ROOT . "/Apps/User/User.php");
+//TransType
+//1:Fee,2:Game/Custom,3:Basket
 class Transaction{
-  private $_session_id;
-    public function getTransSession(){return $this->_session_id;}
-  //Objects
-  private $_operator;
-  private $_account;
-  private $_line_items;//array
-  private $_mysqli;
+	private $_transID;		//Transaction ID
+	public function getTransID(){return $this->_transID;}
+	private $_transOp;		//Transaction Operator
+	private $_transUUID;	//Transaction User
+	private $_transCharge = 0;	//$$$
+	private $_transDesc = "";	//Description of what $$$ was for
+	
+	//Core Class Refences
+	private $_logger;		//Logger Reference
+	private $_mysql;		//Mysqli Reference
+	private $_user;			//User Reference
+	private $_auth;			//Authentication Reference
 
-  private $_line_item_id_string;
-    public function getLineItemIdString(){return $this->_line_item_id_string;}
+	public function __construct($transID = NULL){
+		if(CONFIG::SYS_LOCKOUT)//Check for lockout
+			exit("SIG_TERM_LOCKOUT [" + CONFIG::SYS_LOCKOUT);
 
-  public function __construct($id=-1, $operator){
-    GLOBAL $mysqli;
-    $this->_mysqli = $mysqli;
-    $this->_operator = $operator;
-    if($id == -1){
-      $id = $this->createTransactionSession();
-    }else{
-      $this->_session_id = $id;
-      $this->instantiate();
-    }
-  }
+		if(CONFIG::OPS_ENABLED){
+			$this->_auth = new Authentication();
+			if(!$this->_auth->validateOperatorSession()){//Verify operator session exists
+				exit(json_encode(Authentication::getAuthPrompt()));
+			}
+		}
 
-  public function setOperatorInterface($Operator){$this->_operator = $Operator;}
-
-  private function createTransactionSession(){
-    $query = $this->_mysqli->prepare("INSERT INTO `trans_sessions` VALUES('',?,?,'')");
-    $uuid = $this->_operator->getAccountsInterface()->getUser()->getUUID();
-    $opID = $this->_operator->getOperator()->getOpID();
-    $query->bind_param("ii", $opID, $uuid);
-    $query->execute();
-    $query->store_result();
-    if(!$query->affected_rows == 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Database Error!", "time"=>8000)));
-    }
-    $query->close();
-    $this->_session_id = $this->_mysqli->insert_id;
-  }
-
-  //Get Transaction data
-  private function instantiate(){
-    $query = $this->_mysqli->prepare("SELECT `line_items` FROM `trans_sessions` WHERE `id`=?");
-    $query->bind_param("i",$this->_session_id);
-    $query->execute();
-    $query->store_result();
-    $query->bind_result($this->_line_item_id_string);
-    $query->fetch();
-
-    if(!$query->num_rows == 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Transaction Database Error!", "time"=>8000)));
-    }
-
-    $query->free_result();
-    $query->close();
-
-    $line_item_ids = explode(",", $this->_line_item_id_string);
-    if($line_item_ids[0] == "")
-      return true;
-
-    $this->_line_items = array();
-    foreach($line_item_ids as $item_id){
-      if($item_id == "")
-        continue;
-
-      $lineItem = new LineItem($item_id,$this->_session_id);
-      $this->_line_items[] = $lineItem;
-    }
-  }
-
-  public function getLineItemString(){
-
-  }
-
-  public function addLineItem($item_id, $value){
-    $lineItem = new LineItem(null, $this->_session_id, $item_id, $value);
-    $lineItem->insert();
-    $this->_line_items[] = $lineItem;
-    $lineItemId = $lineItem->getLineItemId();
-    $this->_line_item_id_string .= $lineItemId;
-    $query = $this->_mysqli->prepare("UPDATE `trans_sessions` SET `line_items`=CONCAT(line_items,?,',') WHERE `id`=?");
-    $query->bind_param("si",$lineItemId, $this->_session_id);
-    $query->execute();
-    $query->store_result();
-    if(!$this->_mysqli->affected_rows === 1){
-      $lineItem->drop();
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"[TALI]Database Error!", "time"=>8000)));
-    }
-    //header("tsastatus:2101");
-    //exit(json_encode(array("price")));
-  }
-
-  public function getSKUofItem($itemID){
-    $query = $this->_mysqli->prepare("SELECT `SKU` FROM `trans_purchasable` WHERE `id`=?");
-    $query->bind_param("i", $itemID);
-    $query->execute();
-    $query->store_result();
-
-    if(!$query->num_rows == 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Transaction Database Error!", "time"=>8000)));
-    }
-
-    $query->bind_result($SKU);
-    $query->fetch();
-    $query->close();
-
-    return $SKU;
-  }
-
-  //check if transaction has some # of $SKU already in cart
-  //Returns the LineItem (OBJ) under that SKU if yes
-  public function hasOfSKU($SKU){
-    $iCount = count($this->_line_items);
-    for($i=0;$i<$iCount;$i++){
-      if($this->_line_items[$i]->getSKU() == $SKU){
-        return $this->_line_items[$i];
-      }
-    }
-    return false;
-  }
-
-  public function skuToItemID($sku, $value){
-    $query = $this->_mysqli->prepare("SELECT `id`,`chargeType` FROM `trans_purchasable` WHERE `SKU`=? LIMIT 1");
-    $query->bind_param("i",$sku);
-    $query->execute();
-    $query->store_result();
-    $query->bind_result($id, $chargeType);
-    $query->fetch();
-    if($query->num_rows != 1){
-      return false;
-    }
-
-    switch($chargeType){
-      case "custom":
-        return $id;
-      break;case "leveled":
-        return $value;//client sends product id as value
-      break;case "quantity":
-        return $id;
-      break;default:
-        return false;
-      break;
-    }
-  }
-
-  //TODO:Super inefficent process
-  public function removeLineItem($itemId){
-    $this->_line_item_id_string = "";
-    foreach($this->_line_items as $item){
-      if($item->getLineItemId() == $itemId){
-        $item->drop();
-      }else{
-        $this->_line_item_id_string .= $item->getLineItemId() . ",";
-      }
-    }
-
-	$query = $this->_mysqli->prepare("UPDATE `trans_sessions` SET `line_items`=? WHERE `id`=?");
-	$query->bind_param("si", $this->_line_item_id_string, $this->_session_id);
-	$query->execute();
-	$query->store_result();
-
-	if($this->_mysqli->affected_rows !== 1){
-		header("tsastatus: 500");
-		exit(json_encode(array("type"=>1, "message"=>"[TRLI]Transaction corrupted. Please contact administrator!", "time"=>8000)));
+		$AppMysqli = new AppMysqli();
+		if(!$this->_mysql = $AppMysqli->initMysql())
+			exit("ERR - Database Init");
+		
+		if(!class_exists("Logger"))
+			require(CONFIG::DOC_ROOT . "/Apps/Error/Logger.php");
+		$this->_logger = new Logger();
+			
+		if(!class_exists("TableItems"))
+			require(CONFIG::DOC_ROOT . "/Apps/Commerce/TableItems.php");
+		
+		if(!class_exists("TransactionException"))
+			require(CONFIG::DOC_ROOT . "/Apps/Error/Exceptions/TransactionException.php");
+		
+		$this->_transID = $transID;
+		$this->_transOp = $this->_mysql->real_escape_string($_COOKIE["ATHOPID"]);
+		$this->_transUUID = $this->_mysql->real_escape_string(@$_COOKIE["CURRUD"]);
 	}
-	$query->close();
-  }
-
-  //Get data for recipt to display to client for confirmation
-  public function generateReceipt(){
-    $ic = count($this->_line_items);
-    $retString = "[";
-    for($i=0;$i<$ic;$i++){
-      $retString .= $this->_line_items[$i]->genJString() . ",";
-    }
-    $retString = substr($retString, 0, strlen($retString)-1) . "]";
-    return $retString;
-  }
-
-  //Charges / closes out transaction
-  public function chargeToAccount(){
-    $uuid = $this->_operator->getAccountsInterface()->getUser()->getUUID();
-    $ic = count($this->_line_items);
-    $total = 0.00;
-    for($i=0;$i<$ic;$i++){
-      $total += $this->_line_items[$i]->getPrice();
-    }
-
-    $query = $this->_mysqli->prepare("UPDATE `client_info` SET `balance`=`balance`+?, `transaction_count`=`transaction_count`+1 WHERE `uuid`=?");
-    $query->bind_param("di", $total, $uuid);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Unable to charge account! Transaction NOT completed. " . $this->_mysqli->affected_rows, "time"=>8000)));
-    }
-        $query->close();
-
-    $op_id = $this->_operator->getOperator()->getopID();$zero = 0; $emptyString = "";
-    $query = $this->_mysqli->prepare("INSERT INTO `trans_completed` VALUES(?,?,?,?,?,?,?)");
-    $query->bind_param("iiisdis", $this->_session_id, $op_id, $uuid, $this->_line_item_id_string, $total, $zero, $emptyString);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Unable to close transaction, but Account WAS charged succesfully.", "time"=>8000)));
-    }
-    $query->close();
-//TODO: report discrepency
-
-    $query = $this->_mysqli->prepare("DELETE FROM `trans_sessions` WHERE `id`=? LIMIT 1");
-    $query->bind_param("i", $this->_session_id);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Unable to close transaction, but Account WAS charged succesfully.", "time"=>8000)));
-    }
-    $query->close();
-//TODO: report discrepency
-    $this->_operator->registerNewTransactionSession();
-  }
-
-  public function isTransactionEmpty(){
-    if(count($this->_line_items) == 0){
-      return true;
-    }else{
-      return false;
-    }
-  }
-
-  //Copy transaction to empty continuity table
-  public function markTransactionEmpty(){
-    $query = $this->_mysqli->prepare("INSERT INTO `trans_empty` SELECT * FROM `trans_sessions` WHERE `id`=?");
-    $query->bind_param("i",$this->_session_id);
-    $query->execute();
-    $query->store_result();
-    if(!$query->affected_rows == 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Database Error!", "time"=>8000)));
-    }
-
-    $query = $this->_mysqli->prepare("DELETE FROM `trans_sessions` WHERE `id`=?");
-    $query->bind_param("i", $this->_session_id);
-    $query->execute();
-    $query->store_result();
-    if(!$query->affected_rows == 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Database Error!", "time"=>8000)));
-    }
-
-    $query->close();
-    return true;
-  }
-
-  public function cashout(){
-    GLOBAL $Operator;
-    $uuid = $Operator->getAccountsInterface()->getUser()->getUUID();
-    $query = $this->_mysqli->prepare("SELECT `balance` FROM `client_info` WHERE `uuid`=?");
-    $query->bind_param("i",$uuid);
-    $query->execute();
-    $query->store_result();
-    $query->bind_result($balance);
-    $query->fetch();
-
-    if($query->num_rows != 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Error Compiling Account Information", "time"=>8000)));
-    }
-    $query->close();
-
-    //What TODO: if there are other items on transaction. Can there be 2 transactions w/ same uuid?
-    //Make new, clean transaction in TSA.php to handle cashout?
-    $this->addLineItem(2, $balance*-1);//cashout
-    $this->chargeToAccount();
-
-    $three = 3;
-    $query = $this->_mysqli->prepare("UPDATE `client_info` SET `account_status`=?, account_closed=? WHERE `uuid`=? LIMIT 1");
-    $query->bind_param("iii", $three, $this->_session_id, $uuid);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1){
-      header("tsastatus: 500");
-      exit(json_encode(array("type"=>1, "message"=>"Error Proccessing Account. Please confirm a " . $balance * -1 . " charge has been applied to the account.", "time"=>8000)));
-    }
-    $query->close();
-  }
-
-  //ONLY SUPPORTED FOR BASKETS RIGHT NOW
-  //REVOKES TRANSACTIONS-NOT LINE ITEMS. BAKSET TRANSACTIONS ARE ONLY ONES GAURENTEEED TO HAVE 1 LINE ITEM
-  public function revokeTransaction($id){
-    $query = $this->_mysqli->prepare("SELECT `user_id`,`line_items`,`trans_total`,`revoked` FROM `trans_completed` WHERE `id`=? LIMIT 1");
-    $query->bind_param("i",$id);
-    $query->execute();
-    $query->store_result();
-    if($query->num_rows != 1)
-      return 100;
-    $query->bind_result($userid, $lineItem, $total, $revoked);
-    $query->fetch();
-    $query->close();
-
-    //already revoked
-    if($revoked == 1)
-      return 200;
-
-    $query = $this->_mysqli->prepare("UPDATE `trans_line_items` SET `price`=`price`*-1 WHERE `id`=?");
-    $query->bind_param("i", $lineItem);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1)
-      return 300;
-    $query->close();
-
-    $query = $this->_mysqli->prepare("UPDATE `client_info` SET `balance`=`balance`-? WHERE `uuid`=?");
-    $query->bind_param("di", $total, $userid);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1){
-      return 400;
-    }
-    $query->close();
-
-    $one = 1;$reason = "Silent Auction Item Transfered.";
-    $query = $this->_mysqli->prepare("UPDATE `trans_completed` SET `revoked`=?,`revoked_reason`=? WHERE `id`=?");
-    $query->bind_param("isi",$one, $reason, $id);
-    $query->execute();
-    $query->store_result();
-    if($this->_mysqli->affected_rows != 1)
-      return 500;
-    $query->close();
-
-    return true;
-  }
+	public function newTransaction($param){
+		$this->totalTransaction($param);
+		try{
+			$this->_mysql->query("UPDATE `app_users` SET `balance` = (`balance` + '$this->_transCharge') WHERE `uuid`=$this->_transUUID");
+			if(!$this->_mysql->affected_rows == 1){//Log error and note to op that user was not charged
+				throw new TransactionException("Failed to charge User(ID)[" . $this->_transUUID . "] " . $this->_transCharge . " for \n" . var_dump($this->_transDesc),
+						"",NULL,$this->_transOp,false);
+			}
+			$time = date("G:i:s");
+				$this->_mysql->query("INSERT INTO `app_transTransactions` VALUES('',
+						'$this->_transOp',
+						'$this->_transUUID',
+						'$this->_transDesc',
+						'$this->_transCharge',
+						'1',
+						'$time')");
+				if(!$this->_mysql->affected_rows == 1){//Log error and note to op that user was charged
+					throw new TransactionException("Failed to log user transaction (ID)[" . $this->_transUUID . "] $" . $this->_transCharge . " \n Details: \n " . $this->_transDesc,
+							"",NULL,$this->_transOp,true);
+				}
+				$this->_transID = $this->_mysql->insert_id;
+		}catch(TransactionException $e){
+			$this->logTransactionError($e);
+			$wasCharged = ($e->wasCharged())? "User was charged correct ammount (" . $this->_transCharge . ")" : "User was not charged";
+			return array(false, "An error occured while attempting to process this transaction. " . $wasCharged . ". REFID:" . time());
+		}
+		return array(true, $this->_transID);
+	}
+	
+	//x,y,z,a,b,c,...,custom$,'customDesc' ($'s)
+	private function totalTransaction($param){
+		$loopI = count(TableItems::GAME_LIST);
+		$param = explode(",",$param);
+		for ($i = 0; $i < $loopI; $i++) {
+			if(@$param[$i] > 0){
+				$this->_transCharge += $param[$i];
+		
+				$gameParam = TableItems::GAME_LIST[$i];//Get game parameters
+				$loopJ = count($gameParam["OPTS"]);
+				for($j = 0;$j < $loopJ; $j++){							//Loop through all possible pricing options listed in sysConstants for specified game
+					if($gameParam["OPTS"][$j]["VALUE"] == $param[$i]){	//Check if item charge matches value for $i PRICE[S]
+						$this->_transDesc .= $gameParam["OPTS"][$j]["DESC"] . " | ";	//Select corresponding item description if match
+						break;																//Break out of loop because correct value found
+					}
+				}
+			}
+		}
+		$customCharge = (isset($param[count(TableItems::GAME_LIST)]))? $param[count(TableItems::GAME_LIST)] : 0;
+		$this->_transCharge += $customCharge;
+		$this->_transDesc .= (strlen($param[count(TableItems::GAME_LIST) +1]) >= 2)? "$" . $customCharge . " - " .  $this->_mysql->real_escape_string($param[count(TableItems::GAME_LIST) + 1]) : "";
+	}
+	
+	//TODO: more preminent solution to the OPSESSION CURRUD cookie not getting updated to
+	//properly charge user accounts entires
+	//Exists because OP session not updated until after user created
+	public function chargeEntryFee($uuid, $partyCount){
+		$charge = $partyCount * (TableItems::ENTRY_FEE);
+		$this->_transUUID = $uuid;
+		try{
+			$this->_mysql->query("UPDATE `app_users` SET `balance`=`balance` + $charge WHERE `uuid`=$this->_transUUID");
+			if(!$this->_mysql->affected_rows == 1){//Log error and note to op that user was not charged
+				throw new TransactionException("Failed to charge User(ID)[" . $this->_uuid . "] " . $charge . "for entry of " . $partyCount,
+												"",NULL,$this->_transOp,false);
+			}
+			
+			$time = date("G:i:s");
+			
+			$this->_mysql->query("INSERT INTO `app_transTransactions` VALUES('',
+					'$this->_transOp',
+					'$this->_transUUID',
+					'Entrty Fee x $partyCount',
+					'$charge',
+					'1',
+					'$time')");
+			if(!$this->_mysql->affected_rows == 1){//Log error and note to op that user was charged
+				throw new TransactionException("Failed log user transaction (ID)[" . $this->_uuid . "] " . $charge . " \n Details: \n Entry Fee x " . $partyCount,
+						"",NULL,$this->_transOp,true);
+			}
+		}catch(Exception $e){
+			$this->logTransactionError($e);
+			$wasCharged = ($e->wasCharged())?"User was charged correct ammount (" . $charge . ")" : "User was not charged";
+			exit(array(false, "An error occured while attempting to process this transaction. " . $wasCharged . ". REFID:" . time()));
+		}
+		return array(true);
+	}
+	
+	public function chargeBasketItem($uuid,$basketDesc, $charge){
+		try{
+			$this->_mysql->query("UPDATE `app_users` SET `balance`=`balance` + $charge WHERE `uuid`=$uuid");
+			if(!$this->_mysql->affected_rows == 1){//Log error and note to op that user was not charged
+				throw new TransactionException("Failed to charge User(ID)[" . $uuid . "] " . $charge . " for " . $basketDesc,
+						"",NULL,$this->_transOp,false);
+			}
+				
+			$time = date("G:i:s");
+				
+			$this->_mysql->query("INSERT INTO `app_transTransactions` VALUES('',
+					'$this->_transOp',
+					'$uuid',
+					'$basketDesc',
+					'$charge',
+					'2',
+					'$time')");
+			if(!$this->_mysql->affected_rows == 1){//Log error and note to op that user was charged
+				throw new TransactionException("Failed log user transaction (ID)[" . $uuid . "] " . $charge . " \n Details: \n" . $basketDesc . 
+						"",NULL,$this->_transOp,true);
+			}
+			$this->_transID = $this->_mysql->insert_id;
+		}catch(Exception $e){
+			$this->logTransactionError($e);
+			$wasCharged = ($e->wasCharged())?"User was charged correct ammount (" . $charge . ")" : "User was not charged";
+			exit(array(false, "An error occured while attempting to process this transaction. " . $wasCharged . ". REFID:" . time()));
+		}
+		return array(true);
+	}
+	
+	//Returns parameters of transaction entry with transDesc broken up into array of items ("desc","price")("desc","price")...
+	public function getTransaction(){
+		if(!isset($this->_transID))
+			return 0;
+		
+		$query = $this->_mysql->query("SELECT * FROM `app_transTransactions` WHERE `transID`=$this->_transID");
+		$retArray =  $query->fetch_assoc();
+		
+		//Break into itemized descriptions
+		$transItems = explode(" | ",$retArray["transDesc"]);
+		$retArray["transDesc"] = array();//Clear transDesc to array for array_push in loop
+		
+		
+		$loopI = count($transItems);//-1 removes the empty bit on the end that comes from appending the "|" after each item
+		for($i=0;$i<$loopI;$i++){	
+			$startPriceChars = strpos($transItems[$i],"$");					//Find '$' where price starts
+			$endPriceChars = strpos($transItems[$i]," ",$startPriceChars);	//Look for first 'space' after '$' for price end
+			
+			$pushData = array("desc"=>$transItems[$i],"price"=>substr($transItems[$i],$startPriceChars,($endPriceChars - $startPriceChars)));//returns '$' to last digit
+			array_push($retArray["transDesc"], $pushData);
+		}
+		return $retArray;
+	}
+	
+	public function cashOut(){
+		$query = $this->_mysql->query("SELECT `transDesc`,`transPrice`,`transType` FROM `app_transTransactions` WHERE `transUUID`=$this->_transUUID");
+		$retBuffer = array("transID"=>"CashOut", "customer"=>$this->_transUUID,"transUUID"=>$this->_transUUID,"transDesc"=>array());
+		$total = 0;
+		while($rows = $query->fetch_assoc()){
+			array_push($retBuffer["transDesc"],array("desc"=>$rows["transDesc"],"price"=>$rows["transPrice"]));
+			$total += $rows["transPrice"];
+		}
+		$retBuffer["transOP"] = $this->_auth->getOPID();
+		$retBuffer["transPrice"] = $total;
+		$this->_mysql->query("UPDATE `app_users` SET `balance`=0,`active`=2 WHERE `uuid`=$this->_transUUID");
+		
+		$time = date("G:i:s");
+		$retBuffer["time"] = $time;	
+		
+		$this->_mysql->query("INSERT INTO `app_transTransactions` VALUES('',
+				'$this->_transOp',
+				'$this->_transUUID',
+				'Cashout - $this->_transUUID',
+				'$total',
+				'3',
+				'$time')");
+		return array(true,$retBuffer);
+	}
+	
+	private function logTransactionError($e){
+		$this->_logger->draftLog($e);
+	}
 }
 ?>

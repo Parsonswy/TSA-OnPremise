@@ -1,0 +1,5 @@
+Autofill drop down for create does weird things with encoded characters
+Screen overlays on smaller devices don't position well
+Change qrRead to account portal not charging again not setting CURRUD Session
+Repalce gaming table with account name
+JS calc on table page 1 transaction behind - onclick check
