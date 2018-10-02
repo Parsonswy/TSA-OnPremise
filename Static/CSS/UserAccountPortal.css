@@ -1,0 +1,78 @@
+div.uas_col1{
+	width:550px;
+	height:590px;
+	display:inline-block;
+	float:left;
+	overflow-y:auto;
+}
+
+div.uas_col2{
+	width:240px;
+	height:590px;
+	display:inline-block;
+	border-left: #DDD 1px solid;
+	overflow-y:auto;
+}
+
+div.uas_col_header{
+	cursor:pointer;
+	display:inline-block;
+	width:50%;
+	height:34px;
+	text-align:center;
+	font-size:24px;
+	color:white;
+}
+
+div.uas_col_header:hover{
+	background-color:#505050;
+	color:yellow;
+}
+
+div.uas_transaction{
+	cursor:pointer;
+	width:520px;
+	border: salmon 1px solid;
+	margin-top:4px;
+	margin-left:10px;
+	padding:4px;
+	font-size:20px;
+}
+
+div.uas_balance{
+	width:220px;
+	margin:auto;
+	margin-top:5px;
+	border:green 1px solid;
+	text-align:center;
+	font-size:24px;
+	color:green;
+}
+
+div.uas_party{
+	width:220px;
+	height:200px;
+	margin:5px auto 5px auto;
+	border:1px solid #DDD;
+	text-align:center;
+	color:salmon;
+}
+
+div.uas_baskets_won{
+	width:220px;
+	max-height:300px;
+	margin:auto;
+	overflow-y:auto;
+	border:#DDD solid 1px;
+	padding-bottom:4px;
+}
+
+table.uas_basket_list{
+	margin:auto;
+	width:210px;
+	border-collapse:collapse;
+}
+
+table.uas_basket_list tr{
+	border:salmon 1px solid;
+}
