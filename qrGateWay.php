@@ -19,12 +19,12 @@
                 $_SESSION['id'] = $row['id'];       //SQL Specific ID for verification 
                 $_SESSION['uuid'] = $row['uuid'];   //UUID saved to card. X ref w/SQL id for verification
 				$uuid = $row['uuid'];
-                header("Location: ./gateway.php?uuid=$uuid");
+                header("Location: ./options.php");
                 die();
             }else
                 exit("Card has been de-actived.");
         }else
-            exit("<a href='http://" . $_SERVER["SERVER_ADDR"] . "/html/TSA/tabOpen.php?uuid=" . $uuid . "'>Click here to active $uuid</a>");
+            exit("<a href='http://" . $_SERVER["SERVER_ADDR"] . "/2016/TSA/tabOpen.php?uuid=" . $uuid . "'>Click here to active $uuid</a>");
     }else
         exit("NULL Request Detected<br/>
 				<form action='./qrGateWay.php' method='GET'>
